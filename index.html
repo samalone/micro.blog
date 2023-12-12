@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+	<meta name="generator" content="Hugo 0.91.2" />
+
+  <title>
+      
+      Stuart Malone
+      
+  </title>
+
+</head>
+
+
+  <body>
+
+    
+
+	
+<div class="h-feed">
+
+	
+	
+	  <div class="h-entry">
+		
+			<h1><a href="https://blog.llamagraphics.com/2023/12/12/new-taskutilities-library.html">New TaskUtilities library for Swift</a></h1>
+		
+
+		<a href="https://blog.llamagraphics.com/2023/12/12/new-taskutilities-library.html" class="u-url"><time class="dt-published" datetime="2023-12-12 10:50:32 -0500">Dec 12, 2023</time></a>
+
+		<div class="e-content">
+			 <p>Today, I published a new Swift library called <a href="https://github.com/samalone/task-utilities">TaskUtilities</a>, containing code that was originally in my <a href="https://github.com/samalone/websocket-actor-system">WebSocketActors</a> library. This library serves two purposes:</p>
+<h3 id="understanding-task-structure">Understanding task structure</h3>
+<p>In complex asynchronous code, it is sometimes difficult to know what task is currently running and where it originated.  <code>TaskPath</code> lets you name a task and then retrieve the current task name from an arbitrary point in your code.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift">Task.detached {
+    TaskPath.with(name: <span style="color:#e6db74">&#34;Fetch image&#34;</span>) {
+        ...
+        TaskPath.with(name: <span style="color:#e6db74">&#34;Constructing request&#34;</span>) {
+            ...
+        }
+    }
+}
+
+<span style="color:#75715e">// In other code called from the inner task:</span>
+print(TaskPath.current) <span style="color:#75715e">// Prints &#34;{Task Fetch image &gt; Constructing request}&#34;</span>
+</code></pre></div><h3 id="making-synchronous-code-async-safe">Making synchronous code async-safe</h3>
+<p>If synchronous code like a class has mutable state, it is not safe to call that code from asynchronous tasks. The preferred way to solve this problem is to change the class into an actor, but there are situations where that may not be possible because the code must be called from a synchronous context.</p>
+<p>In these situations, <code>RecursiveTaskLock</code> and <code>LockedValue</code> provide a way to ensure that the mutable state is only accessed from one task at a time.</p>
+<h3 id="taskutilities">TaskUtilities</h3>
+<p>If these features sound helpful, please give my <a href="https://github.com/samalone/task-utilities">TaskUtilities</a> project a try. I look forward to your feedback!</p>
+
+		</div>
+	  </div>
+	
+	  <div class="h-entry">
+		
+			<h1><a href="https://blog.llamagraphics.com/2023/12/02/in-praise-of.html">In praise of Swift&#39;s distributed actors</a></h1>
+		
+
+		<a href="https://blog.llamagraphics.com/2023/12/02/in-praise-of.html" class="u-url"><time class="dt-published" datetime="2023-12-02 10:42:48 -0500">Dec 2, 2023</time></a>
+
+		<div class="e-content">
+			 <p>At WWDC 2022, Apple introduced a new technology in Swift that I don&rsquo;t think got enough attention: <a href="https://developer.apple.com/wwdc22/110356">distributed actors</a>. I&rsquo;ve been working with this system in my iOS app <a href="https://llamagraphics.com/proper-course">Proper Course™</a>, and it has many benefits for the solo programmer working on an iOS app that requires a server component.</p>
+<h3 id="the-traditional-way">The traditional way</h3>
+<p>The traditional way of creating a client-server application is to build a REST-ful API server using Swagger/OpenAPI, and then build your client app on top of that API. This makes sense if your server will have multiple clients written in different languages, and there are some really great technologies like <a href="https://vapor.codes">Vapor</a> and <a href="https://github.com/apple/swift-openapi-generator">Swift OpenAPI Generator</a> that make this job easier. These are great tools to build on if you need a public API for your server.</p>
+<p>But if you are an independent developer focused on creating an iOS app, the OpenAPI approach adds a lot of overhead and indirection that can really slow down development. Developing and maintaining the OpenAPI interface becomes a project of its own, and requires learning tools and workflows that don&rsquo;t really add value to your iOS application.</p>
+<p>Is there something better?</p>
+<h3 id="distributed-actors-to-the-rescue">Distributed actors to the rescue</h3>
+<p>What if you could write entirely in Swift, make Swift function calls between your client and your server, develop them both in the same Xcode workspace, and have the compiler alert you immediately to any problems?</p>
+<p>This is exactly what distributed actors do, and it&rsquo;s pretty glorious.</p>
+<h3 id="getting-started">Getting started</h3>
+<p>Before you start using distributed actors, you need to be comfortable with <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency/">Swift concurrency</a> in general and <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency/#Actors">actors</a> in particular. If you&rsquo;re already using actors in your code, adding distributed actors is pretty easy.</p>
+<p>To use distributed actors, you need a Swift library that provides an <em>actor system</em> with the communications infrastructure for your distributed actors. Apple has a <a href="https://github.com/apple/swift-distributed-actors">peer-to-peer cluster actor system</a> library, but this is designed for scaling distributed servers. For a client-server application, you need a library that is designed for that purpose.</p>
+<p>Apple provides a sample project called <a href="https://developer.apple.com/documentation/swift/tictacfish_implementing_a_game_using_distributed_actors">TicTacFish</a> that includes a client-server actor system based on WebSockets, but this sample code is missing some features that you will probably need in a real application. To support my own application, I&rsquo;ve taken that code and created an open-source library that enhances Apple&rsquo;s sample code with:</p>
+<ul>
+<li>Simultaneous connections to multiple servers &amp; clients</li>
+<li>Automatic reconnection after network failures</li>
+<li>Server calls to client actors (server push)</li>
+<li>Logging with Swift Logging</li>
+</ul>
+<p>If you would like to use distributed actors in your own Swift project, I encourage you to try my <a href="https://github.com/samalone/websocket-actor-system">WebSocketActors</a> library on GitHub. The library is very new, but the main features are in place, and I&rsquo;d love to get feedback and answer questions.</p>
+
+		</div>
+	  </div>
+	
+
+</div>
+
+
+    
+    
+
+  </body>
+
+</html>
